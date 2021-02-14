@@ -3,11 +3,6 @@
 #include <map>
 #include <vector>
 
-struct Key {
-	std::string fName;
-	int index;
-};
-
 __declspec(selectany) std::map<std::string, int> keys = {
 	{"F1", 16649},
 	{"F2", 16650},
