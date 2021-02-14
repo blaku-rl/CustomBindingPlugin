@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31005.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CustomBindingPlugin", "CustomBindingPlugin\CustomBindingPlugin.vcxproj", "{F83EA34E-8754-4D83-B868-BCC0A6CDB06B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F83EA34E-8754-4D83-B868-BCC0A6CDB06B}.Release|x64.ActiveCfg = Release|x64
+		{F83EA34E-8754-4D83-B868-BCC0A6CDB06B}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {84377757-42D4-4722-96C4-7A80042C723C}
+	EndGlobalSection
+EndGlobal
