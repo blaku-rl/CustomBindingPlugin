@@ -11,9 +11,11 @@ public:
 	std::string command;
 	bool allKeysPressed;
 
-	CustomBinding() { allKeysPressed = false; };
+	CustomBinding();
+	CustomBinding(CustomBinding& binding);
 	CustomBinding(std::string key1New, std::string key2New, std::string key3New, std::string newCommand);
 
 	void SetAllKeys(std::string key1New, std::string key2New, std::string key3New);
 	std::string GetKeyString();
+	bool AreKeysValid();
 };

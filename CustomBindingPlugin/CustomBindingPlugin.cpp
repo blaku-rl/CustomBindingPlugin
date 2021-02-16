@@ -8,11 +8,65 @@ std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 void CustomBindingPlugin::onLoad()
 {
 	_globalCvarManager = cvarManager;
+	
+	gameWrapper->HookEvent("Function TAGame.GameViewportClient_TA.HandleKeyPress", std::bind(&CustomBindingPlugin::OnKeyPressed, this, std::placeholders::_1));
 
-	gameWrapper->HookEvent("Function TAGame.GameViewportClient_TA.HandleKeyPress", std::bind(&CustomBindingPlugin::OnTick, this, std::placeholders::_1));
+	ReadInBindings();
+	UpdateSelectedBinding(0);
+}
 
-	//Read in binds set in previous sessions
-	//might need to add checks just incase anyone decides to be bold and edit the file directly
+void CustomBindingPlugin::onUnload()
+{
+	WriteBindings();
+}
+
+void CustomBindingPlugin::OnKeyPressed(std::string eventName)
+{
+	for (auto& binding : bindings) {
+		if (gameWrapper->IsKeyPressed(keys[binding->key1]) && gameWrapper->IsKeyPressed(keys[binding->key2])
+			&& gameWrapper->IsKeyPressed(keys[binding->key3]) && !binding->allKeysPressed) {
+			binding->allKeysPressed = true;
+			cvarManager->executeCommand(binding->command);
+		}
+		else if ((!gameWrapper->IsKeyPressed(keys[binding->key1]) || !gameWrapper->IsKeyPressed(keys[binding->key2])
+			|| !gameWrapper->IsKeyPressed(keys[binding->key3])) && binding->allKeysPressed) {
+			binding->allKeysPressed = false;
+		}
+	}
+
+	if (bindingChangeDesired > 0 && bindingChangeDesired < 4) {
+		cvarManager->log("Checking for key presses");
+		std::string keyName = "";
+
+		for (auto& key : keys) {
+			if (gameWrapper->IsKeyPressed(key.second)) {
+				keyName = key.first;
+				break;
+			}
+		}
+
+		//The key press function has no keys pressed on the first pass
+		if (keyName == "") { return; }
+
+		switch (bindingChangeDesired) {
+		case 1:
+			guiBindingSelected.key1 = keyName;
+			break;
+		case 2:
+			guiBindingSelected.key2 = keyName;
+			break;
+		case 3:
+			guiBindingSelected.key3 = keyName;
+			break;
+		}
+
+		bindingChangeDesired = 0;
+	}
+}
+
+//TODO add checks when reading in the file to make sure its of the proper format
+void CustomBindingPlugin::ReadInBindings()
+{
 	std::ifstream bindFile(bindFilePath);
 	if (bindFile.is_open()) {
 		std::string line;
@@ -21,42 +75,16 @@ void CustomBindingPlugin::onLoad()
 			std::string command = line.substr(line.find(" ") + 1, std::string::npos);
 			CustomBinding binding;
 			std::stringstream ss(keysString);
-			std::getline(ss, binding.key1, '+');
-			std::getline(ss, binding.key2, '+');
-			std::getline(ss, binding.key3, '+');
+			std::getline(ss, binding.key1, ',');
+			std::getline(ss, binding.key2, ',');
+			std::getline(ss, binding.key3, ',');
 			binding.command = command;
-			bindings.push_back(binding);
+			if (binding.AreKeysValid()) {
+				bindings.push_back(std::make_shared<CustomBinding>(binding));
+			}
 		}
 	}
 	bindFile.close();
-}
-
-void CustomBindingPlugin::onUnload()
-{
-
-}
-
-//Check all the bindings when a key is pressed to see if we should do the set command
-//AND IT ACTUALLY WORKS
-void CustomBindingPlugin::OnTick(std::string eventName)
-{
-	for (auto& binding : bindings) {
-		if (gameWrapper->IsKeyPressed(keys[binding.key1]) && gameWrapper->IsKeyPressed(keys[binding.key2])
-			&& gameWrapper->IsKeyPressed(keys[binding.key3]) && !binding.allKeysPressed) {
-			binding.allKeysPressed = true;
-			cvarManager->executeCommand(binding.command);
-		}
-		else if ((!gameWrapper->IsKeyPressed(keys[binding.key1]) || !gameWrapper->IsKeyPressed(keys[binding.key2])
-			|| !gameWrapper->IsKeyPressed(keys[binding.key3])) && binding.allKeysPressed) {
-			binding.allKeysPressed = false;
-		}
-	}
-}
-
-void CustomBindingPlugin::AddBinding(std::string key1, std::string key2, std::string key3, std::string command)
-{
-	auto binding = CustomBinding(key1, key2, key3, command);
-	bindings.push_back(binding);
 }
 
 void CustomBindingPlugin::WriteBindings()
@@ -64,26 +92,65 @@ void CustomBindingPlugin::WriteBindings()
 	std::ofstream bindFile(bindFilePath);
 	if (bindFile.is_open()) {
 		for (auto& binding : bindings) {
-			bindFile << binding.GetKeyString() << " " << binding.command;
+			if (binding->AreKeysValid()) {
+				bindFile << binding->GetKeyString() << " " << binding->command << "\n";
+			}
 		}
 	}
 	bindFile.close();
 }
 
-/*
-* Imagine using discord to talk to people
-* cpp comments on a shared github is where it's at
-* 
-* Here's how I'm thinking we store the data in data file or whatever (slightly older Blaku here, I have assumed this structure)
-* keyName1+keyName2+keyName3 bakkescommand
-* I'm gonna write some functions that will interact with the data (eh kinda)
-* the key in the file to find things will be by the key combinations (sounds like the start of a map to me)
-* also in the gui we should link to the key name website so people can see what keys map to what if they need to
-* 
-* Sleep time now
-* TODO
-* Some indexing for the binds that's not a vector since deletion at any point can happen
-* maybe a linked list for that? I feel like I just want to throw maps at everything lol
-* Stupid gui shit
-*/
+void CustomBindingPlugin::AddBinding()
+{
+	auto binding = CustomBinding("None", "None", "None", "");
+	bindings.push_back(std::make_shared<CustomBinding>(binding));
 
+	UpdateSelectedBinding(bindings.size() - 1);
+}
+
+void CustomBindingPlugin::RemoveSelectedBinding()
+{
+	std::list<std::shared_ptr<CustomBinding>>::iterator begin = bindings.begin();
+	std::advance(begin, guiBindingSelectedPos);
+	bindings.erase(begin);
+
+	WriteBindings();
+	UpdateSelectedBinding(0);
+}
+
+void CustomBindingPlugin::UpdateSelectedBinding(int pos)
+{
+	if (bindings.size() == 0) {
+		guiBindingSelectedPos = -1;
+		return;
+	}
+
+	std::list<std::shared_ptr<CustomBinding>>::iterator begin = bindings.begin();
+	std::advance(begin, pos);
+
+	auto& curBinding = *begin;
+
+	guiBindingSelected = CustomBinding(*curBinding);
+	guiBindingSelectedPos = pos;
+
+	*commandBuffer = {};
+	for (int i = 0; i < sizeof(guiBindingSelected.command); i++) {
+		commandBuffer[i] = guiBindingSelected.command[i];
+	}
+}
+
+void CustomBindingPlugin::SaveSelectedBinding()
+{
+	if (!guiBindingSelected.AreKeysValid()) { return; }
+
+	std::list<std::shared_ptr<CustomBinding>>::iterator begin = bindings.begin();
+	std::advance(begin, guiBindingSelectedPos);
+
+	auto& curBinding = *begin;
+	curBinding->key1 = guiBindingSelected.key1;
+	curBinding->key2 = guiBindingSelected.key2;
+	curBinding->key3 = guiBindingSelected.key3;
+	curBinding->command = std::string(commandBuffer);
+
+	WriteBindings();
+}
