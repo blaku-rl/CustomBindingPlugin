@@ -3,37 +3,34 @@
 
 CustomBinding::CustomBinding()
 {
-	key1 = "";
-	key2 = "";
-	key3 = "";
+	keyList = {};
 	command = "";
 	allKeysPressed = false;
 }
 
 CustomBinding::CustomBinding(CustomBinding& binding)
 {
-	key1 = binding.key1;
-	key2 = binding.key2;
-	key3 = binding.key3;
+	keyList = binding.keyList;
 	command = binding.command;
 	allKeysPressed = binding.allKeysPressed;
 }
 
-CustomBinding::CustomBinding(std::string key1New, std::string key2New, std::string key3New, std::string newCommand)
+CustomBinding::CustomBinding(std::vector<std::string> newKeyList, std::string newCommand)
 {
-	SetAllKeys(key1New, key2New, key3New);
+	keyList = newKeyList;
 	command = newCommand;
 	allKeysPressed = false;
 }
 
-void CustomBinding::SetAllKeys(std::string key1New, std::string key2New, std::string key3New)
-{
-	key1 = key1New;
-	key2 = key2New;
-	key3 = key3New;
-}
-
 std::string CustomBinding::GetKeyString()
 {
-	return key1 + "," + key2 + "," + key3;
+	if (keyList.size() == 0) { return ""; }
+
+	std::string keyString = "";
+	for (int i = 0; i < keyList.size() - 1; i++) {
+		keyString += keyList[i] + ",";
+	}
+
+	keyString += keyList[keyList.size() - 1];
+	return keyString;
 }

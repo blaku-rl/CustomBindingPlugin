@@ -43,21 +43,29 @@ void CustomBindingsPlugin::SetUpKeysMap()
 	}
 }
 
+bool CustomBindingsPlugin::CheckForAllKeysPressed(CustomBinding& binding)
+{
+	if (binding.keyList.size() == 0) { return false; }
+	for (auto& key : binding.keyList) {
+		if (!gameWrapper->IsKeyPressed(keys[key]))
+			return false;
+	}
+	return true;
+}
+
 void CustomBindingsPlugin::OnKeyPressed(std::string eventName)
 {
 	for (auto& binding : bindings) {
-		if (gameWrapper->IsKeyPressed(keys[binding->key1]) && gameWrapper->IsKeyPressed(keys[binding->key2])
-			&& gameWrapper->IsKeyPressed(keys[binding->key3]) && !binding->allKeysPressed) {
+		if (CheckForAllKeysPressed(*binding) && !binding->allKeysPressed) {
 			binding->allKeysPressed = true;
 			cvarManager->executeCommand(binding->command);
 		}
-		else if ((!gameWrapper->IsKeyPressed(keys[binding->key1]) || !gameWrapper->IsKeyPressed(keys[binding->key2])
-			|| !gameWrapper->IsKeyPressed(keys[binding->key3])) && binding->allKeysPressed) {
+		else if ((!CheckForAllKeysPressed(*binding)) && binding->allKeysPressed) {
 			binding->allKeysPressed = false;
 		}
 	}
 
-	if (bindingChangeDesired > 0 && bindingChangeDesired < 4) {
+	if (bindingChangeDesired >= 0 && bindingChangeDesired < guiBindingSelected.keyList.size()) {
 		std::string keyName = "";
 
 		for (auto& key : keys) {
@@ -70,19 +78,8 @@ void CustomBindingsPlugin::OnKeyPressed(std::string eventName)
 		//The key press function has no keys pressed on the first pass
 		if (keyName == "") { return; }
 
-		switch (bindingChangeDesired) {
-		case 1:
-			guiBindingSelected.key1 = keyName;
-			break;
-		case 2:
-			guiBindingSelected.key2 = keyName;
-			break;
-		case 3:
-			guiBindingSelected.key3 = keyName;
-			break;
-		}
-
-		bindingChangeDesired = 0;
+		guiBindingSelected.keyList[bindingChangeDesired] = keyName;
+		bindingChangeDesired = -1;
 	}
 }
 
@@ -94,11 +91,13 @@ void CustomBindingsPlugin::ReadInBindings()
 		while (std::getline(bindFile, line)) {
 			std::string keysString = line.substr(0, line.find(" "));
 			std::string command = line.substr(line.find(" ") + 1, std::string::npos);
+			
 			CustomBinding binding;
+			std::string key;
 			std::stringstream ss(keysString);
-			std::getline(ss, binding.key1, ',');
-			std::getline(ss, binding.key2, ',');
-			std::getline(ss, binding.key3, ',');
+			while (std::getline(ss, key, ','))
+				binding.keyList.push_back(key);
+
 			binding.command = command;
 			if (AreKeysValid(binding)) {
 				bindings.push_back(std::make_shared<CustomBinding>(binding));
@@ -123,10 +122,16 @@ void CustomBindingsPlugin::WriteBindings()
 
 void CustomBindingsPlugin::AddBinding()
 {
-	auto binding = CustomBinding("None", "None", "None", "");
+	auto binding = CustomBinding();
 	bindings.push_back(std::make_shared<CustomBinding>(binding));
 
 	UpdateSelectedBinding(bindings.size() - 1);
+}
+
+void CustomBindingsPlugin::AddKeyToSelectedBinding()
+{
+	guiBindingSelected.keyList.push_back("Press Any Key");
+	bindingChangeDesired = guiBindingSelected.keyList.size() - 1;
 }
 
 void CustomBindingsPlugin::RemoveSelectedBinding()
@@ -153,7 +158,7 @@ void CustomBindingsPlugin::UpdateSelectedBinding(int pos)
 
 	guiBindingSelected = CustomBinding(*curBinding);
 	guiBindingSelectedPos = pos;
-	bindingChangeDesired = 0;
+	bindingChangeDesired = -1;
 
 	*commandBuffer = {};
 	for (int i = 0; i < sizeof(guiBindingSelected.command); i++) {
@@ -169,15 +174,18 @@ void CustomBindingsPlugin::SaveSelectedBinding()
 	std::advance(begin, guiBindingSelectedPos);
 
 	auto& curBinding = *begin;
-	curBinding->key1 = guiBindingSelected.key1;
-	curBinding->key2 = guiBindingSelected.key2;
-	curBinding->key3 = guiBindingSelected.key3;
+	curBinding->keyList = guiBindingSelected.keyList;
 	curBinding->command = std::string(commandBuffer);
 
 	WriteBindings();
 }
 
-bool CustomBindingsPlugin::AreKeysValid(CustomBinding binding)
+bool CustomBindingsPlugin::AreKeysValid(CustomBinding& binding)
 {
-	return keys.find(binding.key1) != keys.end() && keys.find(binding.key2) != keys.end() && keys.find(binding.key3) != keys.end();
+	for (auto& key : binding.keyList) {
+		if (keys.find(key) == keys.end())
+			return false;
+	}
+
+	return true;
 }

@@ -17,14 +17,16 @@ class CustomBindingsPlugin: public BakkesMod::Plugin::BakkesModPlugin, public Ba
 
 	void GenerateSettingsFile();
 	void SetUpKeysMap();
+	bool CheckForAllKeysPressed(CustomBinding& binding);
 	void OnKeyPressed(std::string eventName);
 	void ReadInBindings();
 	void WriteBindings();
 	void AddBinding();
+	void AddKeyToSelectedBinding();
 	void RemoveSelectedBinding();
 	void UpdateSelectedBinding(int pos);
 	void SaveSelectedBinding();
-	bool AreKeysValid(CustomBinding binding);
+	bool AreKeysValid(CustomBinding& binding);
 
 	std::map<std::string, int> keys = {};
 	std::filesystem::path bindFilePath = gameWrapper->GetBakkesModPath() / "data" / "CustomBindings.data";
@@ -38,7 +40,7 @@ class CustomBindingsPlugin: public BakkesMod::Plugin::BakkesModPlugin, public Ba
 	std::string menuTitleDisplay = "Custom Bindings Plugin 1.0";
 	CustomBinding guiBindingSelected;
 	int guiBindingSelectedPos = -1;
-	int bindingChangeDesired = 0;
+	int bindingChangeDesired = -1;
 	char commandBuffer[100] = {};
 
 	virtual void Render() override;

@@ -48,17 +48,18 @@ void CustomBindingsPlugin::RenderBindingDetails()
 			ImGui::Separator();
 			ImGui::TextUnformatted("Keys:");
 			ImGui::SameLine();
-			if (ImGui::ButtonEx((bindingChangeDesired == 1 ? anyKeyText : guiBindingSelected.key1).c_str(), ImVec2(0, 0), ImGuiButtonFlags_AlignTextBaseLine)) {
-				bindingChangeDesired = 1;
+			if (guiBindingSelected.keyList.size() > 0) {
+				for (int i = 0; i < guiBindingSelected.keyList.size(); i++) {
+					if (ImGui::ButtonEx((bindingChangeDesired == i ? anyKeyText : guiBindingSelected.keyList[i]).c_str(), ImVec2(0, 0), ImGuiButtonFlags_AlignTextBaseLine)) {
+						bindingChangeDesired = 1;
+					}
+					ImGui::SameLine();
+				}
 			}
-			ImGui::SameLine();
-			if (ImGui::ButtonEx((bindingChangeDesired == 2 ? anyKeyText : guiBindingSelected.key2).c_str(), ImVec2(0, 0), ImGuiButtonFlags_AlignTextBaseLine)) {
-				bindingChangeDesired = 2;
+			if (ImGui::ButtonEx("Add New Key", ImVec2(0, 0), ImGuiButtonFlags_AlignTextBaseLine)) {
+				AddKeyToSelectedBinding();
 			}
-			ImGui::SameLine();
-			if (ImGui::ButtonEx((bindingChangeDesired == 3 ? anyKeyText : guiBindingSelected.key3).c_str(), ImVec2(0, 0), ImGuiButtonFlags_AlignTextBaseLine)) {
-				bindingChangeDesired = 3;
-			}
+
 			ImGui::TextUnformatted("Command:");
 			ImGui::SameLine();
 			ImGui::InputTextEx("", "", commandBuffer, sizeof(commandBuffer), ImVec2(0, 0), ImGuiTextFlags_None);
