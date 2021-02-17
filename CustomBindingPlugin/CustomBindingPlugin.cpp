@@ -1,26 +1,49 @@
 #include "pch.h"
-#include "CustomBindingPlugin.h"
+#include "CustomBindingsPlugin.h"
 
-BAKKESMOD_PLUGIN(CustomBindingPlugin, "write a plugin description here", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(CustomBindingsPlugin, "A plugin made for settting custom bindings with 3 keys", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
-void CustomBindingPlugin::onLoad()
+void CustomBindingsPlugin::onLoad()
 {
 	_globalCvarManager = cvarManager;
 	
-	gameWrapper->HookEvent("Function TAGame.GameViewportClient_TA.HandleKeyPress", std::bind(&CustomBindingPlugin::OnKeyPressed, this, std::placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameViewportClient_TA.HandleKeyPress", std::bind(&CustomBindingsPlugin::OnKeyPressed, this, std::placeholders::_1));
 
+	GenerateSettingsFile();
+	SetUpKeysMap();
 	ReadInBindings();
 	UpdateSelectedBinding(0);
 }
 
-void CustomBindingPlugin::onUnload()
+void CustomBindingsPlugin::onUnload()
 {
 	WriteBindings();
 }
 
-void CustomBindingPlugin::OnKeyPressed(std::string eventName)
+void CustomBindingsPlugin::GenerateSettingsFile()
+{
+	std::ofstream bindFile(setFilePath);
+	if (bindFile.is_open()) {
+		bindFile << "Custom Bindings Plugin\n";
+		bindFile << "8 |\n";
+		bindFile << "9 | If you want to open the plugin menu from a command run: togglemenu custombindingsplugin;\n";
+		bindFile << "8 |\n";
+		bindFile << "0 | Open Custom Bindings Plugin GUI | plugin load custombindingsplugin; writeplugins; togglemenu custombindingsplugin\n";
+	}
+	bindFile.close();
+}
+
+//RL can change these values with any update, just read them in each time and get the proper int codes
+void CustomBindingsPlugin::SetUpKeysMap()
+{
+	for (auto& keyName : keyNames) {
+		keys.insert(std::pair<std::string, int>(keyName, gameWrapper->GetFNameIndexByString(keyName)));
+	}
+}
+
+void CustomBindingsPlugin::OnKeyPressed(std::string eventName)
 {
 	for (auto& binding : bindings) {
 		if (gameWrapper->IsKeyPressed(keys[binding->key1]) && gameWrapper->IsKeyPressed(keys[binding->key2])
@@ -35,7 +58,6 @@ void CustomBindingPlugin::OnKeyPressed(std::string eventName)
 	}
 
 	if (bindingChangeDesired > 0 && bindingChangeDesired < 4) {
-		cvarManager->log("Checking for key presses");
 		std::string keyName = "";
 
 		for (auto& key : keys) {
@@ -64,8 +86,7 @@ void CustomBindingPlugin::OnKeyPressed(std::string eventName)
 	}
 }
 
-//TODO add checks when reading in the file to make sure its of the proper format
-void CustomBindingPlugin::ReadInBindings()
+void CustomBindingsPlugin::ReadInBindings()
 {
 	std::ifstream bindFile(bindFilePath);
 	if (bindFile.is_open()) {
@@ -79,7 +100,7 @@ void CustomBindingPlugin::ReadInBindings()
 			std::getline(ss, binding.key2, ',');
 			std::getline(ss, binding.key3, ',');
 			binding.command = command;
-			if (binding.AreKeysValid()) {
+			if (AreKeysValid(binding)) {
 				bindings.push_back(std::make_shared<CustomBinding>(binding));
 			}
 		}
@@ -87,12 +108,12 @@ void CustomBindingPlugin::ReadInBindings()
 	bindFile.close();
 }
 
-void CustomBindingPlugin::WriteBindings()
+void CustomBindingsPlugin::WriteBindings()
 {
 	std::ofstream bindFile(bindFilePath);
 	if (bindFile.is_open()) {
 		for (auto& binding : bindings) {
-			if (binding->AreKeysValid()) {
+			if (AreKeysValid(*binding)) {
 				bindFile << binding->GetKeyString() << " " << binding->command << "\n";
 			}
 		}
@@ -100,7 +121,7 @@ void CustomBindingPlugin::WriteBindings()
 	bindFile.close();
 }
 
-void CustomBindingPlugin::AddBinding()
+void CustomBindingsPlugin::AddBinding()
 {
 	auto binding = CustomBinding("None", "None", "None", "");
 	bindings.push_back(std::make_shared<CustomBinding>(binding));
@@ -108,7 +129,7 @@ void CustomBindingPlugin::AddBinding()
 	UpdateSelectedBinding(bindings.size() - 1);
 }
 
-void CustomBindingPlugin::RemoveSelectedBinding()
+void CustomBindingsPlugin::RemoveSelectedBinding()
 {
 	std::list<std::shared_ptr<CustomBinding>>::iterator begin = bindings.begin();
 	std::advance(begin, guiBindingSelectedPos);
@@ -118,7 +139,7 @@ void CustomBindingPlugin::RemoveSelectedBinding()
 	UpdateSelectedBinding(0);
 }
 
-void CustomBindingPlugin::UpdateSelectedBinding(int pos)
+void CustomBindingsPlugin::UpdateSelectedBinding(int pos)
 {
 	if (bindings.size() == 0) {
 		guiBindingSelectedPos = -1;
@@ -132,6 +153,7 @@ void CustomBindingPlugin::UpdateSelectedBinding(int pos)
 
 	guiBindingSelected = CustomBinding(*curBinding);
 	guiBindingSelectedPos = pos;
+	bindingChangeDesired = 0;
 
 	*commandBuffer = {};
 	for (int i = 0; i < sizeof(guiBindingSelected.command); i++) {
@@ -139,9 +161,9 @@ void CustomBindingPlugin::UpdateSelectedBinding(int pos)
 	}
 }
 
-void CustomBindingPlugin::SaveSelectedBinding()
+void CustomBindingsPlugin::SaveSelectedBinding()
 {
-	if (!guiBindingSelected.AreKeysValid()) { return; }
+	if (!AreKeysValid(guiBindingSelected)) { return; }
 
 	std::list<std::shared_ptr<CustomBinding>>::iterator begin = bindings.begin();
 	std::advance(begin, guiBindingSelectedPos);
@@ -153,4 +175,9 @@ void CustomBindingPlugin::SaveSelectedBinding()
 	curBinding->command = std::string(commandBuffer);
 
 	WriteBindings();
+}
+
+bool CustomBindingsPlugin::AreKeysValid(CustomBinding binding)
+{
+	return keys.find(binding.key1) != keys.end() && keys.find(binding.key2) != keys.end() && keys.find(binding.key3) != keys.end();
 }

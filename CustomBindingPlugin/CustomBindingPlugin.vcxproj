@@ -11,6 +11,7 @@
     <ProjectGuid>{f83ea34e-8754-4d83-b868-bcc0a6cdb06b}</ProjectGuid>
     <RootNamespace>CustomBindingPlugin</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>CustomBindingsPlugin</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -129,7 +130,7 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="Key.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="CustomBindingPlugin.h" />
+    <ClInclude Include="CustomBindingsPlugin.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>

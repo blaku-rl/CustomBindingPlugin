@@ -17,5 +17,4 @@ public:
 
 	void SetAllKeys(std::string key1New, std::string key2New, std::string key3New);
 	std::string GetKeyString();
-	bool AreKeysValid();
 };

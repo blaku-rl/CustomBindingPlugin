@@ -37,8 +37,3 @@ std::string CustomBinding::GetKeyString()
 {
 	return key1 + "," + key2 + "," + key3;
 }
-
-bool CustomBinding::AreKeysValid()
-{
-	return keys.find(key1) != keys.end() && keys.find(key2) != keys.end() && keys.find(key3) != keys.end();
-}
