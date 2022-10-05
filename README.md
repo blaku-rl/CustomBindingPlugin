@@ -1,0 +1,9 @@
+# CustomBindingPlugin
+
+## Description
+
+This plugin will allow you to set multi-key keybinds in bakkesmod. I find it super useful on controller to have the power to run many non-conflicting commands all without needing to touch my keyboard. As more plugins are added, the desire to have more binds will grow. The main features are setting the required keys needed to run the command, a name to help you identify which command a bind is representing, and the actual command. There is no limit to how many keys you can require for a command.
+
+## Using The Plugin
+
+To open the plugin menu you can run/bind the command `togglemenu custombindingsplugin` or click the button from the plugins tab in the F2 menu. Make sure that this is the only ImGui window that is open to properly work. To create a binding, click the `Add New Binding` button on the left. This will pull up the binding editor on the right. By default, the plugin behaves like bakkesmod key bindings by having you press the desired key. Click the Add New Key and press the key. When you do, the actual key is still sent to rocket league and processed. I recommend being in the main menu if you're setting binds this way. You can also select a key from a dropdown list of keys if you prefer. To change the key selection method, go the F2 plugins page and unselect the `Use Key Press For Setting Keys` checkbox. With a key set, you can click on it to change it to a different key, or click the remove key next to it to delete it. Type in a name for the binding that will help you remember what the command is. Finally put in the actual command that you want to bind. Once you've done this, click save to save the binding. Any update that you do to a binding will require you to press save to save the changes. You can also remove a binding be clicking the Remove button at the bottom. Finally, you can change the order of the bindings by the `Move Binding Up` & `Move Binding Down` buttons on the binding editor.
